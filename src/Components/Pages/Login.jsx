@@ -2,6 +2,38 @@ import { FaInstagram as Instagram, FaFacebookF as Facebook, FaApple as Apple } f
 import { Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
+
+  async function handleLogin(data){
+    try {
+      let response = await fetch("http://localhost:8080/login", {
+        method: "POST",
+        headers: {"content-type": "application/json"},
+        body: JSON.stringify(data),
+        credentials: "include"
+      });
+
+      const respOk = response.ok;
+      console.log(response.text);
+      response = await response.json();
+      if(!respOk)
+          throw new Error(response.message);
+      
+      alert("Logged in!");
+          
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  function submitHandler(e){
+    e.preventDefault();
+    const form = e.target;
+    const email = form.email.value;
+    const password = form.password.value;
+
+    const cred = {email, password};
+    handleLogin(cred);
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-white to-violet-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-black flex items-center justify-center px-4">
       <div className="w-full max-w-5xl grid lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl bg-white dark:bg-zinc-900">
@@ -65,7 +97,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={submitHandler}>
 
             <div className="relative">
               <Mail
@@ -74,6 +106,7 @@ export default function LoginPage() {
               />
 
               <input
+                name="email"
                 type="email"
                 placeholder="Email"
                 className="w-full rounded-xl border border-gray-300 bg-gray-50 py-3 pl-12 pr-4 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 dark:bg-zinc-800 dark:border-zinc-700"
@@ -87,6 +120,7 @@ export default function LoginPage() {
               />
 
               <input
+                name="password"
                 type="password"
                 placeholder="Password"
                 className="w-full rounded-xl border border-gray-300 bg-gray-50 py-3 pl-12 pr-4 outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 dark:bg-zinc-800 dark:border-zinc-700"
