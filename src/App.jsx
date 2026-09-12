@@ -22,10 +22,12 @@ import MainPage from "./Components/Pages/MainPage"
 //     <RouterProvider router={router} />
 //   )
 // }
-
+import {io} from "socket.io-client";
 export default function App(){
   const [loggedIn, setLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [user, setUser]= useState({});
+  const [socket, setSocket] = useState(null);
   useEffect(()=>{
       (async ()=>{
         try {
@@ -35,7 +37,10 @@ export default function App(){
           response = await response.json();
           if(!ok) throw new Error(response.message);
           console.log(response);
+          setUser(response.message);
           setLoggedIn(true);
+          const socket = io("http://localhost:8080", {withCredentials: true});
+          setSocket(socket);
         } catch (error) {
           setLoggedIn(false);
           console.log(error)
@@ -44,11 +49,13 @@ export default function App(){
         }
       })()
 
-  }, [])
+  }, []);
+
+  
   return(
     <>
       {!loading && !loggedIn && <LoginPage />}
-      {!loading && loggedIn && <MainPage />}
+      {!loading && loggedIn && <MainPage user={user} socket={socket} />}
       {loading && <p>Loadin...</p>}
     </>
   )

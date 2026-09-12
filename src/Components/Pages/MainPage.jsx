@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   MessageCircle,
   Phone,
@@ -81,7 +81,7 @@ const initialMessages = [
   },
 ];
 
-export default function MainPage() {
+export default function MainPage({user, socket}) {
   const [selectedConversation, setSelectedConversation] = useState(
     conversations[0]
   );
@@ -111,6 +111,8 @@ export default function MainPage() {
       },
     ]);
 
+    alert(message+selectedConversation._id)
+
     setMessage("");
   };
 
@@ -139,6 +141,30 @@ export default function MainPage() {
     // fetch/load messages for this conversation here.
   };
 
+
+  const [inbox, setInbox] = useState([]);
+
+  useEffect(()=>{
+    socket.on("new_message", (data)=>{alert(data)})
+  }, [socket])
+
+  useEffect(()=>{
+    (async()=>{
+      try {
+        let response = await fetch("http://localhost:8080/inbox", {credentials: "include"});
+        const resOk = response.ok;
+        response = await response.json();
+        if(!resOk)
+          throw new error(response.message);
+
+        console.log(response.inbox);
+        setInbox(response.inbox);
+        console.log(user)
+      } catch (error) {
+        alert(error.message)
+      }
+    })()
+  }, [])
   return (
     <div className="h-screen bg-slate-100 text-slate-900 flex overflow-hidden">
       {/* ============================================================
@@ -190,12 +216,12 @@ export default function MainPage() {
 
         {/* Conversations */}
         <div className="flex-1 overflow-y-auto">
-          {conversations.map((conversation) => {
+          {inbox.map((conversation) => {
             const active = selectedConversation.id === conversation.id;
 
             return (
               <button
-                key={conversation.id}
+                key={conversation._id}
                 onClick={() => selectConversation(conversation)}
                 className={`
                   w-full px-4 py-3 flex gap-3 text-left
@@ -222,7 +248,7 @@ export default function MainPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between gap-2">
                     <span className="font-medium truncate">
-                      {conversation.name}
+                      {conversation.participants.filter(participant=>participant._id!=user._id)[0].name}
                     </span>
 
                     <span className="text-xs text-slate-400 whitespace-nowrap">
@@ -232,7 +258,7 @@ export default function MainPage() {
 
                   <div className="flex justify-between mt-1">
                     <p className="text-sm text-slate-500 truncate">
-                      {conversation.lastMessage}
+                      {conversation.messages.sort((a,b)=>b.createdAt -a.createdAt)[0].content}
                     </p>
 
                     {conversation.unread > 0 && (
@@ -280,8 +306,9 @@ export default function MainPage() {
 
             <div>
               <h2 className="font-semibold">
-                {selectedConversation.name}
-              </h2>
+                {selectedConversation?.participants?.filter(el=>el._id!=user._id)[0].name}
+
+a              </h2>
 
               <p className="text-xs text-slate-400">
                 {selectedConversation.online ? "Online" : "Offline"}
@@ -320,12 +347,12 @@ export default function MainPage() {
             </span>
           </div>
 
-          {messages.map((msg) => {
-            const isMe = msg.sender === "me";
+          {selectedConversation?.messages?.map((msg) => {
+            const isMe = msg.sentBy===user._id;
 
             return (
               <div
-                key={msg.id}
+                key={msg._id}
                 className={`flex ${isMe ? "justify-end" : "justify-start"}`}
               >
                 <div
@@ -345,11 +372,11 @@ export default function MainPage() {
                       }
                     `}
                   >
-                    {msg.text}
+                    {msg.content}
                   </div>
 
                   <span className="text-[11px] text-slate-400 mt-1 px-1">
-                    {msg.time}
+                    {new Date(msg.createdAt).toString()}
                   </span>
                 </div>
               </div>
